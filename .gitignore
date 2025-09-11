@@ -218,3 +218,4 @@ __marimo__/
 ### OWN FILES
 constants.py
 data/
+data_raw/
