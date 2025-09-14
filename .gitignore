@@ -217,5 +217,6 @@ __marimo__/
 
 ### OWN FILES
 constants.py
+fetch_game_from_steam_250.py
 data/
 data_raw/
