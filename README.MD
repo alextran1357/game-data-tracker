@@ -32,9 +32,9 @@ I wanted to explore these questions by combining **Steam game lists** with the *
 - [x] Resolve titles → ITAD UUIDs (batch API calls with retry handling)  
 - [x] Collect game metadata (release date, tags, Steam review scores, stats)  
 - [x] Store data as CSV/Parquet for reproducibility  
-- [ ] Collect historical pricing data (sale events, discounts, regular price)  
+- [x] Collect historical pricing data (sale events, discounts, regular price)  
+- [x] Clean & preprocess (handle missing values, type conversions)  
 - [ ] Merge price history with game metadata  
-- [ ] Clean & preprocess (handle missing values, type conversions)  
 - [ ] Exploratory Data Analysis (EDA) → discount patterns, lifecycle, seasonal trends  
 - [ ] Compare **top vs. bottom performers**  
 - [ ] Build visualizations / dashboard (PowerBI or Streamlit)  
