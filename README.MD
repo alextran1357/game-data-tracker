@@ -1,8 +1,9 @@
 # 🎮 Game Sale Timing Analysis
 
 ## 📌 Project Overview
-This project explores **how and when games go on sale**, and whether discounts relate to success (reviews, popularity, etc.).  
-The goal is to build a dataset of Steam games, merge it with historical pricing data, and analyze discount strategies across genres, release ages, and popularity tiers.
+This project analyzes **how and when Steam games go on sale**, and whether discounts relate to game success (measured by reviews, popularity, and visibility).  
+I built a dataset of **8,500+ games** and **460k+ historical sale events**, cleaned and structured it, and explored discount strategies across genres, release timing, and review tiers.  
+The project demonstrates my ability to **collect messy real-world data, engineer features, run exploratory analysis, and communicate insights clearly**.
 
 ---
 
@@ -17,52 +18,69 @@ I wanted to explore these questions by combining **Steam game lists** with the *
 ---
 
 ## 📂 Data Sources
-- **SteamDB** → Grab titles from different tier of reviews
-    - Excellent: 85–100
-    - Good: 70–84
-    - Mixed: 50–69
-    - Poor: 30–49
-    - Terrible: 1–29
-- **IsThereAnyDeal (ITAD) API** → game UUIDs, release dates, stats, reviews, and price history  
+- **SteamDB (Game Titles)**  
+  SteamDB does not allow scraping, so I manually collected game titles by highlighting and pasting them into text files across multiple custom review tiers. This resulted in ~8,300 unique titles.  
+- **IsThereAnyDeal (ITAD) API**  
+  Used to resolve titles into UUIDs, fetch game metadata (release dates, tags, review scores, maturity, etc.), and collect historical **event-based pricing data** (discounts, sale events, regular price).  
 
 ---
 
-## 🔄 Process & Checklist
-- [x] Collect game titles from SteamDB (Handgrab 8000+ titles to avoid scraping their website)  
-- [x] Resolve titles → ITAD UUIDs (batch API calls with retry handling)  
-- [x] Collect game metadata (release date, tags, Steam review scores, stats)  
-- [x] Store data as CSV/Parquet for reproducibility  
-- [x] Collect historical pricing data (sale events, discounts, regular price)  
-- [x] Clean & preprocess (handle missing values, type conversions)  
-- [ ] Merge price history with game metadata  
-- [ ] Exploratory Data Analysis (EDA) → discount patterns, lifecycle, seasonal trends  
-- [ ] Compare **top vs. bottom performers**  
-- [ ] Build visualizations / dashboard (PowerBI or Streamlit)  
-- [ ] Model correlations (e.g., reviews before vs after sales)  
-- [ ] Write final insights  
+## 🔄 Process
+1. **Data Collection**  
+   - Batched API calls with retry + caching to collect ~460k sale events  
+   - Designed schema: `game_info`, `game_tags`, `game_history`  
+
+2. **Cleaning & Preprocessing**  
+   - Handled missing values (dates, reviews)  
+   - Normalized datatypes (e.g., `uint8` for % values, datetime for release)  
+   - Flagged anomalies (e.g., impossible 120% discount)  
+
+3. **Exploratory Data Analysis (EDA)**  
+   - Univariate: distribution of reviews, discounts, release dates  
+   - Bivariate: maturity vs review tier, discount lifecycle per game  
+   - Multivariate: seasonal discount clustering, tag distribution in Excellent-tier games  
+
+4. **Feature Engineering**  
+   - Per-game metrics: `time_to_first_sale`, `num_sales`, `max_discount`, `avg_discount`  
+   - Created lifecycle summaries: min vs max vs avg discount per game 
 
 ---
 
-## 📊 Current Status
-- ✅ Titles collected (~8,500 games from 2006–2025 Top 250 lists).  
-- ✅ Metadata enriched (release dates, reviews, tags, ITAD stats).  
-- ⏳ Working on historical sale data collection.  
+## ⚡ Challenges & Problem-Solving
+This project wasn’t a clean dataset exercise — it forced me to deal with real-world messiness and make design choices along the way:
+
+- **Messy & incomplete data**  
+  Many games had missing release dates or reviews. I created boolean flags (`has_release_date`) so I could filter vs impute consistently.  
+- **Delisted or hidden games**  
+  SteamDB includes titles that no longer exist on Steam. These explained some of the missing review/date data and forced me to design around incomplete metadata.  
+- **Event-based sales data**  
+  ITAD only logs *price changes*, not continuous snapshots. At first, this made analysis confusing (many “0% discount” rows).  
+  I solved this by treating the dataset as an **event log** and then engineering per-game summaries like “max discount” and “time to first sale.”  
+- **API reliability & efficiency**  
+  ITAD has strict rate limits. I implemented batching, retries, and response caching to reliably collect ~460k sale events without hitting limits.  
+- **Anomalies**  
+  Found impossible discounts (e.g., 120%). Learned to investigate, validate against context, and decide to drop single noisy entries.  
+- **Skewed variables**  
+  Review counts ranged from 1 to 2.5M, hiding most of the distribution. I used log-scaling to reveal long-tail patterns and interpret them properly.  
+- **EDA fatigue**  
+  Some findings felt “obvious.” I learned to separate **scratchpad EDA** (for myself) from **polished analysis** (for others). This helped me focus on what’s portfolio-worthy.  
 
 ---
 
-## ⚡ Challenges & Learnings
-- Handling **missing values** (release dates, Steam reviews).  
-- Games listed in SteamDB but not visible on Steam → delisted titles.  
-- Efficient **batching and retry logic** for ITAD API calls.  
-- Designing the dataset in a **fact/dimension schema** for analysis (game info vs price history vs tags).  
+## 🏆 Accomplishments
+- Engineered a dataset of **8,500+ games and 460k+ sales events**.  
+- Implemented **robust API pipelines** with batching, retries, and caching.  
+- Designed a clean **fact/dimension schema** (game info, sale history, tags).  
+- Built **derived features**: min/max/avg discount, first-sale timing, seasonal clustering.  
+- Validated insights with **statistical tests** (e.g., chi-squared on maturity vs review tier).  
+- Produced a clear EDA → analysis workflow, showcasing my ability to go from messy raw data to structured insights.  
 
 ---
 
 ## 🔮 Planned Extensions
-- Incorporate **player count data** from Steam API or SteamSpy.  
-- Explore **seasonality** (are discounts clustered around Summer/Winter sales?).  
-- Add **genre/tag breakdowns** (e.g., are indie games discounted earlier?).  
-- Deploy results as an **interactive dashboard**.  
+- Build an **interactive dashboard** (Streamlit) for exploring sales by tag/genre  
+- Extend lifecycle analysis to compare **indie vs AAA games**  
+- Explore correlations between discount timing and long-term success  
 
 ---
 
