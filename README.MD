@@ -81,7 +81,7 @@ This project wasn’t a clean dataset exercise — it forced me to deal with rea
 - Build an **interactive dashboard** (Streamlit) for exploring sales by tag/genre  
 - Extend lifecycle analysis to compare **indie vs AAA games**  
 - Explore correlations between discount timing and long-term success  
-
+- Implement game completion time from `howlongtobeat.com`
 ---
 
 ## 🛠️ How to Run
