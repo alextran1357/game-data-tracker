@@ -51,6 +51,8 @@ This project wasn’t a clean dataset exercise — it forced me to deal with rea
 
 - **Messy & incomplete data**  
   Many games had missing release dates or reviews. I created boolean flags (`has_release_date`) so I could filter vs impute consistently.  
+- **Data Gathering Limitations**  
+  Data gathering was constrained by SteamDB’s search and pagination limits. Because only a limited number of entries were accessible at a time, I collected a subset of games for each Steam rating tier. As a result, the dataset contains far fewer poorly rated games compared to well-rated ones. This imbalance reflects both the natural distribution of ratings on Steam and the practical limitations of manual data collection. Consequently, the data may not fully represent the true proportion of low-rated games in the broader Steam catalog. 
 - **Delisted or hidden games**  
   SteamDB includes titles that no longer exist on Steam. These explained some of the missing review/date data and forced me to design around incomplete metadata.  
 - **Event-based sales data**  
