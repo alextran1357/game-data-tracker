@@ -27,28 +27,31 @@ I wanted to explore these questions by combining **Steam game lists** with the *
 
 ## 🔄 Process
 1. **Data Collection**  
-   - Batched API calls with retry + caching to collect ~460k sale events  
-   - Designed schema: `game_info`, `game_tags`, `game_history`  
+   - Batched API calls with retry + caching to collect ~460k sale events.  
+   - Designed schema: `game_info`, `game_tags`, `game_history`.  
 
 2. **Cleaning & Preprocessing**  
-   - Handled missing values (dates, reviews)  
-   - Normalized datatypes (e.g., `uint8` for % values, datetime for release)  
-   - Flagged anomalies (e.g., impossible 120% discount)  
+   - Resolved missing and inconsistent records.
+   - Normalized datatypes.
+   - Flagged anomalies such as invalid discounts or missing sale dates.
 
-3. **Exploratory Data Analysis (EDA)**  
-   - Univariate: distribution of reviews, discounts, release dates  
-   - Bivariate: maturity vs review tier, discount lifecycle per game  
-   - Multivariate: seasonal discount clustering, tag distribution in Excellent-tier games  
+3. **Feature Engineering**  
+   - Per-game metrics: `time_to_first_sale`, `num_sales`, `max_discount`, `avg_discount`.  
+   - Created lifecycle summaries: min vs max vs avg discount per game.
 
-4. **Feature Engineering**  
-   - Per-game metrics: `time_to_first_sale`, `num_sales`, `max_discount`, `avg_discount`  
-   - Created lifecycle summaries: min vs max vs avg discount per game 
+4. **Exploratory & Statistical Analysis
+   - Conducted formal tests and regression analysis for the research paper to quantify relationships between pricing and player engagement.
+   - Explored distributions of price, review score, release month, and sale percentage.
 
+5. **Interactive Dashboard Development
+   - Built a Streamlit app for interactive exploration of sale and engagement patterns.
+   - Integrated dynamic filtering, custom Altair visuals, and metric cards for key KPIs.
 ---
 
 ## ⚡ Challenges & Problem-Solving
 This project wasn’t a clean dataset exercise — it forced me to deal with real-world messiness and make design choices along the way:
 
+### 🧹 Data & Collection
 - **Messy & incomplete data**  
   Many games had missing release dates or reviews. I created boolean flags (`has_release_date`) so I could filter vs impute consistently.  
 - **Data Gathering Limitations**  
@@ -58,38 +61,43 @@ This project wasn’t a clean dataset exercise — it forced me to deal with rea
 - **Event-based sales data**  
   ITAD only logs *price changes*, not continuous snapshots. At first, this made analysis confusing (many “0% discount” rows).  
   I solved this by treating the dataset as an **event log** and then engineering per-game summaries like “max discount” and “time to first sale.”  
+
+### ⚙️ Data Integrity & Quality
 - **API reliability & efficiency**  
   ITAD has strict rate limits. I implemented batching, retries, and response caching to reliably collect ~460k sale events without hitting limits.  
 - **Anomalies**  
   Found impossible discounts (e.g., 120%). Learned to investigate, validate against context, and decide to drop single noisy entries.  
 - **Skewed variables**  
-  Review counts ranged from 1 to 2.5M, hiding most of the distribution. I used log-scaling to reveal long-tail patterns and interpret them properly.  
-- **EDA fatigue**  
-  Some findings felt “obvious.” I learned to separate **scratchpad EDA** (for myself) from **polished analysis** (for others). This helped me focus on what’s portfolio-worthy.  
+  Review counts ranged from 1 to 2.5M, hiding most of the distribution. I used log-scaling to reveal long-tail patterns and interpret them properly.
+
+### 📊 Research & Statistical Analysis
+- **Learning new statistical methods**  
+  To validate findings, I studied correlation tests and non-parametric comparisons for skewed data. The hard part wasn't just applying them; it was understanding assumptions and interpreting results responsibly and translating stats into meaningful insights for readers.
+- **Explaining insights clearly**  
+  Turning statistical significance into plain-language pushed me to balance technical accuracy with storytelling.
+
+### 🖥️ Dashboard Design & Development
+- **Learning Streamlist from scratch**
+  I had never used Streamlit before, so building the dasboard meant learning how components, layout, and state work while figuring out how to connect everything to my data.
+- **Designing something that felt right**
+  I don't have much of a design background, so a lot of the time went into experimenting with colors and layouts until it looked clean and easy to read. There were many times I had to rewrite big parts of the code until I was happy with it.
 
 ---
 
 ## 🏆 Accomplishments
-- Engineered a dataset of **8,500+ games and 460k+ sales events**.  
-- Implemented **robust API pipelines** with batching, retries, and caching.  
-- Designed a clean **fact/dimension schema** (game info, sale history, tags).  
-- Built **derived features**: min/max/avg discount, first-sale timing, seasonal clustering.  
-- Validated insights with **statistical tests** (e.g., chi-squared on maturity vs review tier).  
+- Engineered a dataset of 8,500+ games and 460k+ sales events.  
+- Implemented robust API pipelines with batching, retries, and caching.  
+- Designed a clean fact/dimension schema (game info, sale history, tags).  
+- Built derived features: min/max/avg discount, first-sale timing, seasonal clustering.  
+- Validated insights with statistical tests (e.g., chi-squared on maturity vs review tier).  
 - Produced a clear EDA → analysis workflow, showcasing my ability to go from messy raw data to structured insights.  
-
+- Developed an interactive Streamlit dashbord to explore these patterns.
+- Produced a full research analysis + visual app to demonstrate an end-to-end workflow.
 ---
 
 ## 🔮 Planned Extensions
-- Build an **interactive dashboard** (Streamlit) for exploring sales by tag/genre  
+- Add more games
 - Extend lifecycle analysis to compare **indie vs AAA games**  
 - Explore correlations between discount timing and long-term success  
 - Implement game completion time from `howlongtobeat.com`
 ---
-
-## 🛠️ How to Run
-1. Clone this repo  
-2. Install requirements:  
-   ```bash
-   pip install -r requirements.txt
-3. Add your ITAD API key in `constants.py`
-4. Run scripts in `src/` to rebuild the dataset
