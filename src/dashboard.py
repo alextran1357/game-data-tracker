@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-import plotly.express as px
+import os
 from streamlit_dynamic_filters import DynamicFilters
 from streamlit_extras.metric_cards import style_metric_cards
 
@@ -15,10 +15,24 @@ st.write("Explore how price, ratings, and release month affect peak player count
 
 @st.cache_data
 def load_data():
-  game_info = pd.read_parquet("../data/game_info.parquet")
-  game_history = pd.read_parquet("../data/game_history.parquet")
-  game_tags = pd.read_parquet("../data/game_tags.parquet")
-  game_tags_15 = pd.read_parquet("../data/game_tags_15.parquet")
+  current_dir = os.path.dirname(__file__)
+  
+  data_path_info = os.path.join(current_dir, "..", "data", "game_info.parquet")
+  data_path_info = os.path.abspath(data_path_info)
+  game_info = pd.read_parquet(data_path_info)
+  
+  data_path_history = os.path.join(current_dir, "..", "data", "game_history.parquet")
+  data_path_history = os.path.abspath(data_path_history)
+  game_history = pd.read_parquet(data_path_history)
+  
+  data_path_tags = os.path.join(current_dir, "..", "data", "game_tags.parquet")
+  data_path_tags = os.path.abspath(data_path_tags)
+  game_tags = pd.read_parquet(data_path_tags)
+  
+  data_path_tags_15 = os.path.join(current_dir, "..", "data", "game_tags_15.parquet")
+  data_path_tags_15 = os.path.abspath(data_path_tags_15)
+  game_tags_15 = pd.read_parquet(data_path_tags_15)
+  
   return game_info, game_history, game_tags, game_tags_15
 game_info, game_history, game_tags, game_tags_15 = load_data()
 filtered_df = game_info.copy()
