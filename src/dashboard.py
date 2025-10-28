@@ -112,12 +112,15 @@ if len(filtered_df):
       filtered_df = filtered_df[filtered_df['achievements'] == False]
   
   hover = alt.selection_point(on="mouseover")
-  col1, col2, col3 = st.columns(3, gap="small")
+  col1, col2, col3, col4 = st.columns(4, gap="small")
   with col1:
-    st.metric("Median Steam Score", f"{filtered_df['steam_score'].median():.0f}")
+    median_peak = int(filtered_df["peak_player_count"].median())
+    st.metric("Median Peak Players", f"{median_peak:,}")
   with col2:
-    st.metric("Median Price", f"${filtered_df['regular_price'].median():.2f}")
+    st.metric("Median Steam Score", f"{filtered_df['steam_score'].median():.0f}")
   with col3:
+    st.metric("Median Price", f"${filtered_df['regular_price'].median():.2f}")
+  with col4:
     average_percent_off = sum(filtered_df[filtered_df["percent"] > 0]['percent'] / len(filtered_df[filtered_df["percent"] > 0]))
     st.metric("Average Sale Percent", f"{average_percent_off:.0f}%")
   col1, col2 = st.columns(2)
@@ -170,14 +173,11 @@ if len(filtered_df):
     border_color="#333",
     box_shadow=False
   )
-  col1, col2, col3 = st.columns(3, gap="small")  
+  col1, col2 = st.columns(2, gap="small")  
   with col1:
-    median_peak = int(filtered_df["peak_player_count"].median())
-    st.metric("Median Peak Players", f"{median_peak:,}")
-  with col2:
     total_players = int(filtered_df["peak_player_count"].sum())
     st.metric("Total Peak Players", f"{total_players:,}")
-  with col3:
+  with col2:
     st.metric("Number of Games", len(filtered_df))
   with st.expander("🔍 View Filtered Games"):
     st.dataframe(
