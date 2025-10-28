@@ -39,11 +39,11 @@ I wanted to explore these questions by combining **Steam game lists** with the *
    - Per-game metrics: `time_to_first_sale`, `num_sales`, `max_discount`, `avg_discount`.  
    - Created lifecycle summaries: min vs max vs avg discount per game.
 
-4. **Exploratory & Statistical Analysis
+4. **Exploratory & Statistical Analysis**
    - Conducted formal tests and regression analysis for the research paper to quantify relationships between pricing and player engagement.
    - Explored distributions of price, review score, release month, and sale percentage.
 
-5. **Interactive Dashboard Development
+5. **Interactive Dashboard Development**
    - Built a Streamlit app for interactive exploration of sale and engagement patterns.
    - Integrated dynamic filtering, custom Altair visuals, and metric cards for key KPIs.
 ---
