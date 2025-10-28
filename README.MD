@@ -1,6 +1,7 @@
 # 🎮 Steam Game Sales Analysis & Dashboard
 
-[![Open in Streamlit]](https://alextran1357-game-data-tracker-srcdashboard-u70h5x.streamlit.app/)
+## 💻 Dashboard
+[Open in Streamlit!](https://alextran1357-game-data-tracker-srcdashboard-u70h5x.streamlit.app/)
 
 ## 📌 Project Overview
 This project analyzes **how and when Steam games go on sale**, and whether discounts relate to game success (measured by reviews, popularity, and visibility).  
