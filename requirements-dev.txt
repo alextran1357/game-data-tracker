@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# Analysis notebooks and data pipeline
+beautifulsoup4==4.13.5
+matplotlib==3.10.6
+numpy==1.25.0
+pingouin==0.5.5
+pyarrow==19.0.0
+requests==2.32.5
+scipy==1.15.3
+seaborn==0.13.2

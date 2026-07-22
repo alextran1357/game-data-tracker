@@ -11,25 +11,28 @@ st.set_page_config(
   layout="wide",
 )
 st.title("🎮 Steam Data Dashboard")
-st.write("Explore how price, ratings, and release month affect peak player counts.")
+st.markdown("""
+This dashboard explores how game price, ratings, and release year relate to player activity on Steam.
+Use the filters to narrow down by tags or release periods.
+""")
 
 @st.cache_data
 def load_data():
   current_dir = os.path.dirname(__file__)
   
-  data_path_info = os.path.join(current_dir, "..", "data", "game_info.parquet")
+  data_path_info = os.path.join(current_dir, "..", "data", "processed", "game_info.parquet")
   data_path_info = os.path.abspath(data_path_info)
   game_info = pd.read_parquet(data_path_info)
   
-  data_path_history = os.path.join(current_dir, "..", "data", "game_history.parquet")
+  data_path_history = os.path.join(current_dir, "..", "data", "processed", "game_history.parquet")
   data_path_history = os.path.abspath(data_path_history)
   game_history = pd.read_parquet(data_path_history)
   
-  data_path_tags = os.path.join(current_dir, "..", "data", "game_tags.parquet")
+  data_path_tags = os.path.join(current_dir, "..", "data", "processed", "game_tags.parquet")
   data_path_tags = os.path.abspath(data_path_tags)
   game_tags = pd.read_parquet(data_path_tags)
   
-  data_path_tags_15 = os.path.join(current_dir, "..", "data", "game_tags_15.parquet")
+  data_path_tags_15 = os.path.join(current_dir, "..", "data", "processed", "game_tags_15.parquet")
   data_path_tags_15 = os.path.abspath(data_path_tags_15)
   game_tags_15 = pd.read_parquet(data_path_tags_15)
   
@@ -63,6 +66,7 @@ if len(filtered_df):
   #   "Release Year",
   #   [x for x in range(int(min(game_info['release_year'])), int(max(game_info['release_year'])+1))]
   # )
+
   score_range = st.sidebar.slider("Steam Score Range", 0, 100, (0, 100))
   early_access = st.sidebar.radio(
       "Early Access",
@@ -115,14 +119,16 @@ if len(filtered_df):
   col1, col2, col3, col4 = st.columns(4, gap="small")
   with col1:
     median_peak = int(filtered_df["peak_player_count"].median())
-    st.metric("Median Peak Players", f"{median_peak:,}")
+    st.metric("Median Peak Concurrent Players", f"{median_peak:,}", help="Median of each game’s all-time highest concurrent player count.")
   with col2:
-    st.metric("Median Steam Score", f"{filtered_df['steam_score'].median():.0f}")
+    st.metric("Median Steam Review Score (0-100)", f"{filtered_df['steam_score'].median():.0f}", help="Average user rating per game.")
   with col3:
-    st.metric("Median Price", f"${filtered_df['regular_price'].median():.2f}")
+    st.metric("Median Price (USD)", f"${filtered_df['regular_price'].median():.2f}", help="Base price before discount.")
   with col4:
     average_percent_off = sum(filtered_df[filtered_df["percent"] > 0]['percent'] / len(filtered_df[filtered_df["percent"] > 0]))
-    st.metric("Average Sale Percent", f"{average_percent_off:.0f}%")
+    st.metric("Average Discount (%)", f"{average_percent_off:.0f}%", help="Average discount across all sales events for selected games.")
+    # st.metric("Average Discount (%)", value=average_percent_off, help="Average discount across all sales events for selected games.")
+
   col1, col2 = st.columns(2)
   with col1:
     release_trends_over_time_chart = alt.Chart(filtered_df[filtered_df['release_date'].notnull() &
@@ -137,20 +143,26 @@ if len(filtered_df):
         )
       ),
     ).properties(height=CHART_HEIGHT, width="container", title="Game Releases per Year")
-    st.altair_chart(release_trends_over_time_chart)
+    tile = col1.container(border=True)
+    tile.altair_chart(release_trends_over_time_chart)
+    # st.altair_chart(release_trends_over_time_chart)
+    tile.caption("Shows how many new Steam games were released annually. Use filters to explore growth trends over time.")
   with col2:
     score_vs_price = alt.Chart(filtered_df).mark_bar().encode(
       x=alt.X("regular_price:Q", title="Price", bin=alt.Bin(step=2.5)),
       y=alt.Y("count():Q", title="Count")
     ).properties(height=CHART_HEIGHT, width="container", title="Price")
-    st.altair_chart(score_vs_price)
+    tile = col2.container(border=True)
+    tile.altair_chart(score_vs_price)
+    tile.caption("This chart shows how game prices are distributed across the dataset. Try filtering by tag or release year to see if certain genres tend to have higher or lower prices.")
   col1, col2 = st.columns(2)
   with col1:
     score_over_time = alt.Chart(filtered_df[filtered_df['release_date'].notnull()]).mark_line().encode(
       x=alt.X("release_year:O", title="Release Year", axis=alt.Axis(labelAngle=-45)),
       y=alt.Y("mean(steam_score):Q", title="Median Steam Score", scale=alt.Scale(domain=[0,100]))
-    ).properties(height=CHART_HEIGHT, width="container", title="Median Score over Time")
-    st.altair_chart(score_over_time)
+    ).properties(height=CHART_HEIGHT, width="container", title="Median Steam Review Score over Time")
+    tile = col1.container(border=True)
+    tile.altair_chart(score_over_time)
   with col2:
     tag_summary = (
       game_tags.merge(filtered_df, on="itad_uuid").groupby("tag")["peak_player_count"]
@@ -160,7 +172,8 @@ if len(filtered_df):
       .sort_values("median", ascending=False)
       .head(10)
     )
-    st.altair_chart(
+    tile = col2.container(border=True)
+    tile.altair_chart(
       alt.Chart(tag_summary).mark_bar().encode(
         x=alt.X("median", title="Median Peak Players"),
         y=alt.Y("tag:N", title="Tags").sort("-x")
@@ -176,14 +189,15 @@ if len(filtered_df):
   col1, col2 = st.columns(2, gap="small")  
   with col1:
     total_players = int(filtered_df["peak_player_count"].sum())
-    st.metric("Total Peak Players", f"{total_players:,}")
+    st.metric("Total Peak Players (Sum of Game Peaks)", f"{total_players:,}", help="Sum of each game’s all-time peak concurrent players.")
   with col2:
-    st.metric("Number of Games", len(filtered_df))
+    st.metric("Total Number of Games", len(filtered_df))
   with st.expander("🔍 View Filtered Games"):
     st.dataframe(
       filtered_df[["rank", "title", "steam_score", "regular_price", "peak_player_count"]]
     )
-
+  with st.expander("💡 Key Insight: Pricing vs Players"):
+      st.write("Games priced under $10 tend to have higher median player peaks, likely due to lower barriers to entry.")
   # if chart_choice == "Overall Summary" and len(filtered_df):
   #   st.sidebar.empty()
     

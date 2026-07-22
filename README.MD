@@ -8,6 +8,17 @@ This project analyzes **how and when Steam games go on sale**, and whether disco
 I built a dataset of **8,500+ games** and **460k+ historical sale events**, cleaned and structured it, and explored discount strategies across genres, release timing, and review tiers.  
 The project demonstrates my ability to **collect messy real-world data, engineer features, run exploratory analysis, and communicate insights clearly**.
 
+## 🗂️ Repository Layout
+
+- `data/processed/` — final Parquet tables used by the dashboard and analysis.
+- `data/interim/` — generated handoff files between pipeline stages.
+- `data/raw/` — local SteamDB inputs and ITAD response caches; ignored by Git.
+- `notebooks/` — exploratory analysis and the research report.
+- `src/pipeline/` — numbered data collection and transformation notebooks.
+- `src/dashboard.py` — stable Streamlit deployment entry point.
+
+See [`data/README.md`](data/README.md) and [`src/pipeline/README.md`](src/pipeline/README.md) for file-level details.
+
 ---
 
 ## 🚀 Motivation
