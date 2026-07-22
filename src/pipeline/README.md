@@ -8,9 +8,23 @@ The numbered notebooks describe the intended workflow:
 4. `04_fetch_price_history.ipynb` fetches price events into the ITAD history cache and `data/interim/game_history.csv`.
 5. `05_build_core_tables.ipynb` builds `data/processed/game_info.parquet` and `game_tags.parquet`.
 6. `06_enrich_game_info.ipynb` adds cached Early Access and peak-player fields to the processed game table.
+7. `build_analysis_tables.py` converts the resolved mapping and processed source tables into four validated analysis-ready tables under `data/processed/analytics/`.
+
+Run the analysis-table builder from the repository root:
+
+```powershell
+python src/pipeline/build_analysis_tables.py
+```
+
+The builder creates:
+
+- `dim_game.parquet` — one row per resolved game ID.
+- `fact_price_event.parquet` — one row per distinct observed price record.
+- `fact_discount_event.parquet` — one row per valid discounted observation.
+- `game_discount_summary.parquet` — one row per game with analysis-ready discount metrics.
 
 `constants.py` is local and ignored by Git because it contains the ITAD API key. Run pipeline notebooks from this directory so their `../../data/` paths and local import resolve correctly.
 
 Install `requirements-dev.txt` from the repository root before running the pipeline or analysis notebooks. `requirements.txt` remains limited to the deployed dashboard.
 
-The current notebooks document the historical pipeline. A future cleanup should convert them into restartable Python modules with explicit validation between stages.
+The notebooks document the historical collection pipeline. `build_analysis_tables.py` is the repeatable transformation entry point for the redesigned analysis.
