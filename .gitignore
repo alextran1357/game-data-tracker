@@ -217,7 +217,10 @@ __marimo__/
 
 ### OWN FILES
 constants.py
-fetch_game_from_steam_250.py
-was_a_test.ipynb
-data/*.csv
-data_raw/
+src/archive/fetch_game_from_steam_250.py
+notebooks/archive/history_csv_to_parquet_legacy.ipynb
+
+# Local source data, caches, generated intermediates, and superseded artifacts.
+data/raw/
+data/archive/
+data/interim/*.csv
