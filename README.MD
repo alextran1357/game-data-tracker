@@ -16,6 +16,7 @@ The project demonstrates my ability to **collect messy real-world data, engineer
 - `notebooks/` — exploratory analysis and the research report.
 - `src/pipeline/` — data collection notebooks and the repeatable analysis-table builder.
 - `src/dashboard.py` — stable Streamlit deployment entry point.
+- `reports/` — generated data-quality and analytical reports.
 
 See [`data/README.md`](data/README.md) and [`src/pipeline/README.md`](src/pipeline/README.md) for file-level details.
 

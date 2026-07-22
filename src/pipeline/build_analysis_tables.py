@@ -4,8 +4,9 @@ Run from the repository root with:
 
     python src/pipeline/build_analysis_tables.py
 
-The builder reads the existing resolved game mapping and processed source tables.
-It does not modify those inputs or the files used by the current dashboard.
+The builder reads the resolved game mapping, processed metadata, tags, and the
+complete Steam/USD staging history when it is available. It does not modify
+those inputs or the files used by the current dashboard.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ OUTPUT_DIR = DATA_DIR / "processed" / "analytics"
 
 GAME_LIST_PATH = DATA_DIR / "interim" / "game_list.parquet"
 GAME_INFO_PATH = DATA_DIR / "processed" / "game_info.parquet"
+GAME_HISTORY_STAGING_PATH = DATA_DIR / "interim" / "game_history.csv"
 GAME_HISTORY_PATH = DATA_DIR / "processed" / "game_history.parquet"
 GAME_TAGS_PATH = DATA_DIR / "processed" / "game_tags.parquet"
 
@@ -48,10 +50,38 @@ def load_sources() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFra
         missing_text = "\n".join(f"- {path}" for path in missing)
         raise FileNotFoundError(f"Required input files are missing:\n{missing_text}")
 
+    if GAME_HISTORY_STAGING_PATH.exists():
+        history_columns = [
+            "itad_uuid",
+            "timestamp",
+            "shop_id",
+            "shop_name",
+            "deal_price",
+            "regular_price",
+            "currency",
+            "percent",
+        ]
+        game_history = pd.read_csv(
+            GAME_HISTORY_STAGING_PATH,
+            header=None,
+            names=history_columns,
+        )
+        valid_source_scope = (
+            game_history["shop_id"].eq(61)
+            & game_history["shop_name"].eq("Steam")
+            & game_history["currency"].eq("USD")
+        )
+        if not valid_source_scope.all():
+            raise ValueError(
+                "game_history.csv contains records outside the Steam/USD project scope"
+            )
+    else:
+        game_history = pd.read_parquet(GAME_HISTORY_PATH)
+
     return (
         pd.read_parquet(GAME_LIST_PATH),
         pd.read_parquet(GAME_INFO_PATH),
-        pd.read_parquet(GAME_HISTORY_PATH),
+        game_history,
         pd.read_parquet(GAME_TAGS_PATH),
     )
 
@@ -192,6 +222,11 @@ def build_fact_price_event(
 ) -> pd.DataFrame:
     """Return one row per distinct observed Steam price record."""
     price = game_history.copy()
+    has_source_scope_columns = {
+        "shop_id",
+        "shop_name",
+        "currency",
+    }.issubset(price.columns)
     price["game_id"] = _clean_identifier(price.pop("itad_uuid"))
     price["observed_at"] = pd.to_datetime(price.pop("timestamp"), errors="coerce", utc=True)
     price["deal_price_usd"] = pd.to_numeric(price.pop("deal_price"), errors="coerce").round(2)
@@ -206,6 +241,7 @@ def build_fact_price_event(
         subset=[
             "game_id",
             "observed_at",
+            *(("shop_id", "currency") if has_source_scope_columns else ()),
             "deal_price_usd",
             "regular_price_usd",
             "discount_pct",
@@ -216,6 +252,7 @@ def build_fact_price_event(
         [
             "game_id",
             "observed_at",
+            *(("shop_id", "currency") if has_source_scope_columns else ()),
             "regular_price_usd",
             "deal_price_usd",
             "discount_pct",
@@ -231,9 +268,14 @@ def build_fact_price_event(
     price["price_event_number"] = (
         price.groupby("game_id", sort=False).cumcount().add(1).astype("Int32")
     )
-    price["shop_id"] = pd.Series(61, index=price.index, dtype="Int16")
-    price["shop_name"] = pd.Series("Steam", index=price.index, dtype="string")
-    price["currency"] = pd.Series("USD", index=price.index, dtype="string")
+    if has_source_scope_columns:
+        price["shop_id"] = pd.to_numeric(price["shop_id"], errors="coerce").astype("Int16")
+        price["shop_name"] = price["shop_name"].astype("string")
+        price["currency"] = price["currency"].astype("string")
+    else:
+        price["shop_id"] = pd.Series(61, index=price.index, dtype="Int16")
+        price["shop_name"] = pd.Series("Steam", index=price.index, dtype="string")
+        price["currency"] = pd.Series("USD", index=price.index, dtype="string")
 
     positive_regular = price["regular_price_usd"].gt(0)
     price["computed_discount_pct"] = np.where(
@@ -425,7 +467,7 @@ def build_fact_discount_event(fact_price_event: pd.DataFrame) -> pd.DataFrame:
         .astype("Float32")
     )
     discount["is_release_day_discount"] = discount["game_age_days"].between(
-        -1, 0, inclusive="both"
+        -1, 1, inclusive="both"
     ).fillna(False).astype("boolean")
 
     ordered_columns = [
@@ -644,6 +686,8 @@ def validate_tables(
     price_key = [
         "game_id",
         "observed_at",
+        "shop_id",
+        "currency",
         "deal_price_usd",
         "regular_price_usd",
         "discount_pct",
