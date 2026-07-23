@@ -5,7 +5,7 @@
 
 ## 📌 Project Overview
 This project analyzes **when Steam games first go on sale and how deep those first discounts are**.
-I built a dataset of **8,500+ games** and **460k+ historical price events**, cleaned and structured it, and created a dashboard for comparing discount timing across game segments.
+I built a dataset of **8,500+ games** and **460k+ historical price events**, cleaned and structured it, and created a dashboard for benchmarking first-discount decisions.
 The project demonstrates my ability to **collect messy real-world data, engineer features, run exploratory analysis, and communicate insights clearly**.
 
 ## 🗂️ Repository Layout
@@ -59,8 +59,8 @@ I wanted to explore these questions by combining **Steam game lists** with the *
    - Explored distributions of price, review score, release month, and sale percentage.
 
 5. **Interactive Dashboard Development**
-   - Built a Streamlit app focused on first-discount timing and depth.
-   - Added simple filters and charts while keeping the dashboard dataset small.
+   - Built a Streamlit benchmark for testing a proposed first-discount window and depth.
+   - Added comparable-game filters while keeping the dashboard dataset small.
 ---
 
 ## ⚡ Challenges & Problem-Solving
