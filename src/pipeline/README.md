@@ -8,7 +8,7 @@ The numbered notebooks describe the intended workflow:
 4. `04_fetch_price_history.ipynb` fetches price events into the ITAD history cache and writes the canonical `data/processed/game_history.parquet`.
 5. `05_build_core_tables.ipynb` builds `data/processed/game_info.parquet` and `game_tags.parquet`.
 6. `06_enrich_game_info.ipynb` adds cached Early Access and peak-player fields to the processed game table.
-7. `build_analysis_tables.py` builds and validates four analysis-ready tables under `data/processed/analytics/`, then writes `reports/data_quality_report.md`.
+7. `build_analysis_tables.py` builds and validates two compact analysis tables under `data/processed/analytics/`, then writes `reports/data_quality_report.md`.
 
 Run the analysis-table builder from the repository root:
 
@@ -19,11 +19,9 @@ python src/pipeline/build_analysis_tables.py
 The builder creates:
 
 - `dim_game.parquet` — one row per resolved game ID.
-- `fact_price_event.parquet` — one row per distinct observed price record.
-- `fact_discount_event.parquet` — one row per valid discounted observation.
 - `game_discount_summary.parquet` — one row per game with analysis-ready discount metrics.
 
-The builder always uses the complete canonical Steam/USD history in `data/processed/game_history.parquet`. It checks table grains, relationships, discount calculations, cohort eligibility, censoring, and follow-up windows before replacing the outputs.
+The builder uses the complete canonical Steam/USD history in `data/processed/game_history.parquet`. Price and discount events stay in memory while the two small output tables are calculated. The builder validates the results before replacing them.
 
 `constants.py` is local and ignored by Git because it contains the ITAD API key. Run pipeline notebooks from this directory so their `../../data/` paths and local import resolve correctly.
 

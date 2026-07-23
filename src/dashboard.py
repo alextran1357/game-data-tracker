@@ -1,274 +1,167 @@
-import streamlit as st
-import pandas as pd
-import altair as alt
-import os
-from streamlit_dynamic_filters import DynamicFilters
-from streamlit_extras.metric_cards import style_metric_cards
+from pathlib import Path
 
-st.set_page_config(
-  page_title="Steam Data Dashboard",
-  page_icon="🎮",
-  layout="wide",
+import altair as alt
+import pandas as pd
+import streamlit as st
+
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "processed" / "analytics"
+
+st.set_page_config(page_title="Steam Discount Timing", page_icon="🎮", layout="wide")
+st.title("🎮 Steam Discount Timing")
+st.write(
+    "Explore when Steam games first go on sale and how deep their first discount is. "
+    "Results describe this dataset; they do not show that discounting causes success."
 )
-st.title("🎮 Steam Data Dashboard")
-st.markdown("""
-This dashboard explores how game price, ratings, and release year relate to player activity on Steam.
-Use the filters to narrow down by tags or release periods.
-""")
+
 
 @st.cache_data
 def load_data():
-  current_dir = os.path.dirname(__file__)
-  
-  data_path_info = os.path.join(current_dir, "..", "data", "processed", "game_info.parquet")
-  data_path_info = os.path.abspath(data_path_info)
-  game_info = pd.read_parquet(data_path_info)
-  
-  data_path_history = os.path.join(current_dir, "..", "data", "processed", "game_history.parquet")
-  data_path_history = os.path.abspath(data_path_history)
-  game_history = pd.read_parquet(data_path_history)
-  
-  data_path_tags = os.path.join(current_dir, "..", "data", "processed", "game_tags.parquet")
-  data_path_tags = os.path.abspath(data_path_tags)
-  game_tags = pd.read_parquet(data_path_tags)
-  
-  data_path_tags_15 = os.path.join(current_dir, "..", "data", "processed", "game_tags_15.parquet")
-  data_path_tags_15 = os.path.abspath(data_path_tags_15)
-  game_tags_15 = pd.read_parquet(data_path_tags_15)
-  
-  return game_info, game_history, game_tags, game_tags_15
-game_info, game_history, game_tags, game_tags_15 = load_data()
-filtered_df = game_info.copy()
-game_history_copy = game_history.sort_values("regular_price").drop_duplicates("itad_uuid")
-filtered_df = filtered_df.merge(game_history_copy, on="itad_uuid", how='left')
-CHART_HEIGHT = 320
-# ------------ Select Chart ------------
-# chart_choice = st.sidebar.selectbox(
-#   "Charts Selection",
-#   ["Overall Summary", "User Exploration"],
-#   index=0
-# )
-# st.title(chart_choice)
+    games = pd.read_parquet(DATA_DIR / "dim_game.parquet")
+    summary = pd.read_parquet(DATA_DIR / "game_discount_summary.parquet")
+    summary = summary.drop(columns=["reported_release_date", "discount_timing_eligible"])
+    return games.merge(summary, on="game_id", validate="one_to_one")
 
-# if chart_choice == "User Exploration" and len(filtered_df):
-if len(filtered_df):
-  # ------------ Sidebar Config Display ------------
-  sidebar_title = st.sidebar.header("Filters")
-  tag_filter = DynamicFilters(game_tags_15, filters=['tag'])
-  with st.sidebar:
-    tag_filter.display_filters()
-  release_month_dict = {"01 - January":1, "02 - February":2, "03 - March":3, "04 - April":4, "05 - May":5, "06 - June":6, "07 - July":7, "08 - August":8, "09 - September":9, "10 - October":10, "11 - November":11, "12 - December":12}
-  release_month = st.sidebar.multiselect( 
-    "Release Month",
-    ["01 - January", "02 - February", "03 - March", "04 - April", "05 - May", "06 - June" , "07 - July", "08 - August", "09 - September", "10 - October", "11 - November", "12 - December"]
-  )
-  # release_year = st.sidebar.multiselect(
-  #   "Release Year",
-  #   [x for x in range(int(min(game_info['release_year'])), int(max(game_info['release_year'])+1))]
-  # )
 
-  score_range = st.sidebar.slider("Steam Score Range", 0, 100, (0, 100))
-  early_access = st.sidebar.radio(
-      "Early Access",
-      ["All", "Yes", "No"],
-      index=0,
-      horizontal=True
-  )
-  mature = st.sidebar.radio(
-      "Mature",
-      ["All", "Yes", "No"],
-      index=0,
-      horizontal=True
-  )
-  achievements = st.sidebar.radio(
-      "Achievements",
-      ["All", "Yes", "No"],
-      index=0,
-      horizontal=True
-  )
+data = load_data()
+data = data.loc[data["is_game"]].copy()
+data["release_year"] = data["reported_release_date"].dt.year
 
-  # ------------ Apply Filters ------------
-  if tag_filter:
-    filter_id = tag_filter.filter_df()
-    filter_id = filter_id['itad_uuid'].dropna().unique()
-    filtered_df = filtered_df[game_info['itad_uuid'].isin(filter_id)]
-  if release_month:
-    check_release_month = [release_month_dict[x] for x in release_month]
-    filtered_df = filtered_df[filtered_df['release_month'].isin(check_release_month)]
-  # if release_year:
-  #   filtered_df = filtered_df[filtered_df['release_year'].isin(release_year)]
-  if score_range:
-    filtered_df = filtered_df[filtered_df['steam_score'].between(score_range[0], score_range[1])]
-  if early_access != "All":
-    if early_access == "Yes":
-      filtered_df = filtered_df[filtered_df['early_access'] == True]
-    else:
-      filtered_df = filtered_df[filtered_df['early_access'] == False]
-  if mature != "All":
-    if mature == "Yes":
-      filtered_df = filtered_df[filtered_df['mature'] == True]
-    else:
-      filtered_df = filtered_df[filtered_df['mature'] == False]
-  if achievements != "All":
-    if achievements == "Yes":
-      filtered_df = filtered_df[filtered_df['achievements'] == True]
-    else:
-      filtered_df = filtered_df[filtered_df['achievements'] == False]
-  
-  hover = alt.selection_point(on="mouseover")
-  col1, col2, col3, col4 = st.columns(4, gap="small")
-  with col1:
-    median_peak = int(filtered_df["peak_player_count"].median())
-    st.metric("Median Peak Concurrent Players", f"{median_peak:,}", help="Median of each game’s all-time highest concurrent player count.")
-  with col2:
-    st.metric("Median Steam Review Score (0-100)", f"{filtered_df['steam_score'].median():.0f}", help="Average user rating per game.")
-  with col3:
-    st.metric("Median Price (USD)", f"${filtered_df['regular_price'].median():.2f}", help="Base price before discount.")
-  with col4:
-    average_percent_off = sum(filtered_df[filtered_df["percent"] > 0]['percent'] / len(filtered_df[filtered_df["percent"] > 0]))
-    st.metric("Average Discount (%)", f"{average_percent_off:.0f}%", help="Average discount across all sales events for selected games.")
-    # st.metric("Average Discount (%)", value=average_percent_off, help="Average discount across all sales events for selected games.")
+st.sidebar.header("Filters")
+all_tags = sorted(data["tags"].explode().dropna().unique())
+selected_tags = st.sidebar.multiselect("Tags", all_tags)
 
-  col1, col2 = st.columns(2)
-  with col1:
-    release_trends_over_time_chart = alt.Chart(filtered_df[filtered_df['release_date'].notnull() &
-                                                          (filtered_df['release_date'].dt.year > 2000)]).mark_bar().encode(
-      x=alt.X("release_year:O", title="Release Year", axis=alt.Axis(labelAngle=-45)),
-      y=alt.Y("count()", title="Count"),
-      color=alt.Color(
-        "early_access", 
-        title="Early Access",
-        legend=alt.Legend(
-          labelExpr="datum.label == 'true' ? 'Yes' : 'No'"  # rename labels
+years = data["release_year"].dropna().astype(int)
+year_range = st.sidebar.slider(
+    "Release year",
+    int(years.min()),
+    int(years.max()),
+    (int(years.min()), int(years.max())),
+)
+score_range = st.sidebar.slider("Steam review score", 0, 100, (0, 100))
+early_access = st.sidebar.radio("Early access", ["All", "Yes", "No"], horizontal=True)
+eligible_only = st.sidebar.checkbox("Use reliable timing cohort only", value=True)
+
+filtered = data.loc[
+    data["release_year"].between(*year_range)
+    & data["steam_review_score"].between(*score_range)
+].copy()
+if selected_tags:
+    wanted = set(selected_tags)
+    filtered = filtered.loc[
+        filtered["tags"].apply(lambda tags: bool(wanted.intersection(tags)))
+    ]
+if early_access != "All":
+    filtered = filtered.loc[filtered["early_access"].eq(early_access == "Yes")]
+if eligible_only:
+    filtered = filtered.loc[filtered["discount_timing_eligible"]]
+
+if filtered.empty:
+    st.warning("No games match these filters.")
+    st.stop()
+
+eligible = filtered.loc[filtered["discount_timing_eligible"]]
+observed = eligible.loc[eligible["days_to_first_discount"].notna()].copy()
+
+metric_1, metric_2, metric_3, metric_4 = st.columns(4)
+metric_1.metric("Games in view", f"{len(filtered):,}")
+metric_2.metric("Reliable timing cohort", f"{len(eligible):,}")
+metric_3.metric(
+    "Median days to first discount",
+    f"{observed['days_to_first_discount'].median():.0f}" if len(observed) else "—",
+)
+metric_4.metric(
+    "Median first discount",
+    f"{observed['first_discount_pct'].median():.0f}%" if len(observed) else "—",
+)
+
+window_rows = []
+for days in (30, 90, 180, 365):
+    values = eligible[f"discounted_within_{days}_days"].dropna()
+    window_rows.append(
+        {
+            "Window": f"{days} days",
+            "Games observed": len(values),
+            "Discounted (%)": 100 * values.mean() if len(values) else 0,
+        }
+    )
+window_data = pd.DataFrame(window_rows)
+
+timing_labels = ["0–30", "31–90", "91–180", "181–365", "366+"]
+observed["Timing"] = pd.cut(
+    observed["days_to_first_discount"],
+    [-1, 30, 90, 180, 365, float("inf")],
+    labels=timing_labels,
+)
+timing_data = (
+    observed.groupby("Timing", observed=False)
+    .agg(Games=("game_id", "size"), **{"Median discount (%)": ("first_discount_pct", "median")})
+    .reset_index()
+)
+
+left, right = st.columns(2)
+with left:
+    st.altair_chart(
+        alt.Chart(window_data)
+        .mark_bar()
+        .encode(
+            x=alt.X("Window:N", sort=[f"{days} days" for days in (30, 90, 180, 365)]),
+            y=alt.Y("Discounted (%):Q", scale=alt.Scale(domain=[0, 100])),
+            tooltip=["Window", "Discounted (%):Q", "Games observed:Q"],
         )
-      ),
-    ).properties(height=CHART_HEIGHT, width="container", title="Game Releases per Year")
-    tile = col1.container(border=True)
-    tile.altair_chart(release_trends_over_time_chart)
-    # st.altair_chart(release_trends_over_time_chart)
-    tile.caption("Shows how many new Steam games were released annually. Use filters to explore growth trends over time.")
-  with col2:
-    score_vs_price = alt.Chart(filtered_df).mark_bar().encode(
-      x=alt.X("regular_price:Q", title="Price", bin=alt.Bin(step=2.5)),
-      y=alt.Y("count():Q", title="Count")
-    ).properties(height=CHART_HEIGHT, width="container", title="Price")
-    tile = col2.container(border=True)
-    tile.altair_chart(score_vs_price)
-    tile.caption("This chart shows how game prices are distributed across the dataset. Try filtering by tag or release year to see if certain genres tend to have higher or lower prices.")
-  col1, col2 = st.columns(2)
-  with col1:
-    score_over_time = alt.Chart(filtered_df[filtered_df['release_date'].notnull()]).mark_line().encode(
-      x=alt.X("release_year:O", title="Release Year", axis=alt.Axis(labelAngle=-45)),
-      y=alt.Y("mean(steam_score):Q", title="Median Steam Score", scale=alt.Scale(domain=[0,100]))
-    ).properties(height=CHART_HEIGHT, width="container", title="Median Steam Review Score over Time")
-    tile = col1.container(border=True)
-    tile.altair_chart(score_over_time)
-  with col2:
-    tag_summary = (
-      game_tags.merge(filtered_df, on="itad_uuid").groupby("tag")["peak_player_count"]
-      .agg(["median", "count"])
-      .query("count >= 15")
-      .reset_index()
-      .sort_values("median", ascending=False)
-      .head(10)
+        .properties(title="Games discounted within each window", height=320),
+        use_container_width=True,
     )
-    tile = col2.container(border=True)
-    tile.altair_chart(
-      alt.Chart(tag_summary).mark_bar().encode(
-        x=alt.X("median", title="Median Peak Players"),
-        y=alt.Y("tag:N", title="Tags").sort("-x")
-      ).properties(height=CHART_HEIGHT, width="container", title="Top 10 Tags"),
-      use_container_width=True
+    st.caption("Each bar uses only games followed for the entire time window.")
+
+with right:
+    st.altair_chart(
+        alt.Chart(timing_data)
+        .mark_bar()
+        .encode(
+            x=alt.X("Timing:N", sort=timing_labels, title="Days to first discount"),
+            y=alt.Y("Games:Q"),
+            tooltip=["Timing", "Games", "Median discount (%):Q"],
+        )
+        .properties(title="When first discounts occurred", height=320),
+        use_container_width=True,
     )
-  style_metric_cards(
-    background_color="#1e1e1e",
-    border_left_color="#4dabf7",
-    border_color="#333",
-    box_shadow=False
-  )
-  col1, col2 = st.columns(2, gap="small")  
-  with col1:
-    total_players = int(filtered_df["peak_player_count"].sum())
-    st.metric("Total Peak Players (Sum of Game Peaks)", f"{total_players:,}", help="Sum of each game’s all-time peak concurrent players.")
-  with col2:
-    st.metric("Total Number of Games", len(filtered_df))
-  with st.expander("🔍 View Filtered Games"):
+
+tag_data = observed[["game_id", "tags", "days_to_first_discount"]].explode("tags")
+tag_data = (
+    tag_data.groupby("tags")
+    .agg(Games=("game_id", "size"), **{"Median days": ("days_to_first_discount", "median")})
+    .query("Games >= 15")
+    .sort_values("Games", ascending=False)
+    .head(15)
+    .reset_index()
+)
+if not tag_data.empty:
+    st.altair_chart(
+        alt.Chart(tag_data)
+        .mark_bar()
+        .encode(
+            x=alt.X("Median days:Q", title="Median days to first discount"),
+            y=alt.Y("tags:N", sort="-x", title="Tag"),
+            tooltip=["tags", "Games", "Median days:Q"],
+        )
+        .properties(title="First-discount timing among common tags", height=420),
+        use_container_width=True,
+    )
+
+with st.expander("View games"):
     st.dataframe(
-      filtered_df[["rank", "title", "steam_score", "regular_price", "peak_player_count"]]
+        filtered[
+            [
+                "title",
+                "release_year",
+                "steam_review_score",
+                "release_price_usd",
+                "days_to_first_discount",
+                "first_discount_pct",
+                "peak_player_count",
+            ]
+        ].sort_values("days_to_first_discount"),
+        hide_index=True,
+        width="stretch",
     )
-  with st.expander("💡 Key Insight: Pricing vs Players"):
-      st.write("Games priced under $10 tend to have higher median player peaks, likely due to lower barriers to entry.")
-  # if chart_choice == "Overall Summary" and len(filtered_df):
-  #   st.sidebar.empty()
-    
-  #   #------------ Release Month/Year ------------
-  #   st.header("Release Month and Year")
-  #   release_month_chart = alt.Chart(game_info[game_info['release_date'].notnull()]).mark_bar().encode(
-  #     x=alt.X("release_month:O", axis=alt.Axis(labelAngle=0), title="Release Month"),
-  #     y=alt.Y("count()")
-  #   ).properties(height=300, width="container")
-  #   release_year_chart = alt.Chart(game_info[game_info['release_date'].notnull()]).mark_bar().encode(
-  #     x=alt.X("release_year:O", axis=alt.Axis(labelAngle=0), title="Release Year"),
-  #     y=alt.Y("count()")
-  #   ).properties(height=300, width="container")
-  #   st.altair_chart(release_year_chart | release_month_chart, use_container_width=True)
-    
-  #   month_summary = (
-  #     game_info[["release_month", "peak_player_count"]]
-  #     .groupby('release_month')['peak_player_count']
-  #     .agg(["count", "mean", "median"])
-  #   ).reset_index()
-  #   st.altair_chart(
-  #     alt.Chart(month_summary).mark_bar().encode(
-  #       x=alt.X("release_month:O", axis=alt.Axis(labelAngle=0), title="Release Month"),
-  #       y=alt.Y("median")
-  #     ).properties(height=300, width="container"),
-  #     use_container_width=True
-  #   )
-  #   #------------ Price ------------
-  #   st.header("Price and Score")
-  #   price_count = alt.Chart(game_history_copy).mark_bar().encode(
-  #     x=alt.X("regular_price:Q", title="Regular Price", bin=alt.Bin(step=5), scale=alt.Scale(domain=[0,70])),
-  #     y=alt.Y("count()"),
-  #   ).properties(height=300, width="container")
-  #   percent_discount_count = alt.Chart(game_history[game_history["percent"] > 0]).mark_bar().encode(
-  #     x=alt.X("percent:O", axis=alt.Axis(labelAngle=0), title="Percent", bin=alt.Bin(step=5)),
-  #     y=alt.Y("count()")
-  #   ).properties(height=300, width="container")
-    
-  #   st.altair_chart(price_count | percent_discount_count)
-    
-  #   #------------ Score ------------
-  #   st.header("Score Distribution")
-  #   score_count = alt.Chart(game_info).mark_bar().encode(
-  #     x=alt.X("steam_score:Q", title="Steam Score", bin=alt.Bin(step=5), scale=alt.Scale(domain=[0,max(filtered_df['steam_score'])])),
-  #     y=alt.Y("count()"),
-  #   ).properties(height=300, width="container")
-  #   st.altair_chart(score_count, use_container_width=True)
-    
-  #   #------------ Sale Percentages ------------
-  #   st.header("Sales Data")
-  #   sale_percent = alt.Chart(game_history[game_history["percent"] > 0]).mark_bar().encode(
-  #     x=alt.X("percent", title="Sale Percent", bin=alt.Bin(step=5)),
-  #     y=alt.Y("count()")
-  #   )
-  #   st.altair_chart(sale_percent, use_container_width=True)
-  #   # ------------ Top Tags ------------
-  #   st.header("Top Tags")
-  #   tag_peak = game_tags.merge(game_info, on="itad_uuid")
-  #   tag_summary = (
-  #     tag_peak.groupby("tag")["peak_player_count"]
-  #     .agg(["median", "count"])
-  #     .query("count >= 15")
-  #     .reset_index()
-  #     .sort_values("median", ascending=False)
-  #     .head(18)
-  #   )
-  #   st.altair_chart(
-  #     alt.Chart(tag_summary).mark_bar().encode(
-  #       x=alt.X("median", title="Median Peak Players"),
-  #       y=alt.Y("tag:N", title="Tags").sort("-x")
-  #     )
-  #     .properties(height=450, width="container"),
-  #     use_container_width=True
-  #   )

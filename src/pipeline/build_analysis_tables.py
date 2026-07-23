@@ -1,4 +1,4 @@
-"""Build the four tables used for discount analysis."""
+"""Build the compact tables used for discount analysis."""
 
 from pathlib import Path
 
@@ -301,8 +301,6 @@ def validate(games, prices, discounts, summary):
 def write_results(source, games, prices, discounts, summary):
     tables = {
         "dim_game": games,
-        "fact_price_event": prices,
-        "fact_discount_event": discounts,
         "game_discount_summary": summary,
     }
     ANALYTICS.mkdir(parents=True, exist_ok=True)

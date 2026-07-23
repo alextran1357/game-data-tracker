@@ -4,8 +4,8 @@
 [Open in Streamlit!](https://alextran1357-game-data-tracker-srcdashboard-u70h5x.streamlit.app/)
 
 ## 📌 Project Overview
-This project analyzes **how and when Steam games go on sale**, and whether discounts relate to game success (measured by reviews, popularity, and visibility).  
-I built a dataset of **8,500+ games** and **460k+ historical sale events**, cleaned and structured it, and explored discount strategies across genres, release timing, and review tiers.  
+This project analyzes **when Steam games first go on sale and how deep those first discounts are**.
+I built a dataset of **8,500+ games** and **460k+ historical price events**, cleaned and structured it, and created a dashboard for comparing discount timing across game segments.
 The project demonstrates my ability to **collect messy real-world data, engineer features, run exploratory analysis, and communicate insights clearly**.
 
 ## 🗂️ Repository Layout
@@ -23,10 +23,10 @@ See [`data/README.md`](data/README.md) and [`src/pipeline/README.md`](src/pipeli
 ---
 
 ## 🚀 Motivation
-Games release very often, and I want to know:
-- Is there a month trend for when more successful games release compared to less successful games?
-- Do successful games discount differently than less popular ones?  
-- Does timing/depth of sales influence player engagement or reviews?  
+The project asks:
+- How soon after release do games receive their first observed discount?
+- How deep is that first discount?
+- How does timing differ across tags, release years, review scores, and Early Access status?
 
 I wanted to explore these questions by combining **Steam game lists** with the **IsThereAnyDeal API** for metadata and price history.
 
@@ -59,8 +59,8 @@ I wanted to explore these questions by combining **Steam game lists** with the *
    - Explored distributions of price, review score, release month, and sale percentage.
 
 5. **Interactive Dashboard Development**
-   - Built a Streamlit app for interactive exploration of sale and engagement patterns.
-   - Integrated dynamic filtering, custom Altair visuals, and metric cards for key KPIs.
+   - Built a Streamlit app focused on first-discount timing and depth.
+   - Added simple filters and charts while keeping the dashboard dataset small.
 ---
 
 ## ⚡ Challenges & Problem-Solving
